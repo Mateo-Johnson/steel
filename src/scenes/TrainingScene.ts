@@ -22,7 +22,7 @@ export default class TrainingScene extends Phaser.Scene {
       light: Phaser.Input.Keyboard.KeyCodes.Z,
       heavy: Phaser.Input.Keyboard.KeyCodes.X,
       block: Phaser.Input.Keyboard.KeyCodes.SPACE,
-      dash: Phaser.Input.Keyboard.KeyCodes.SHIFT,
+      dash: Phaser.Input.Keyboard.KeyCodes.F,
       parry: Phaser.Input.Keyboard.KeyCodes.C,
     });
 
