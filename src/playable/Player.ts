@@ -15,7 +15,6 @@ export default class Player {
   private scene: Phaser.Scene;
   public sprite: Phaser.GameObjects.Rectangle;
   public attackHitbox: Phaser.GameObjects.Rectangle;
-  public telegraphHitbox: Phaser.GameObjects.Rectangle;
   public blockHitbox: Phaser.GameObjects.Rectangle;
 
   private state: State = "idle";
@@ -29,25 +28,23 @@ export default class Player {
 
   private blockTimer = 0;
   private blockCooldown = 0;
-  private perfectBlockWindow = 0.15;
+  private perfectBlockWindow = 0.2; // longer window now
   private lastBlockTime = 0;
-  private partialBlockMultiplier = 0.5;
 
   private attackTimer = 0;
   private attackCooldown = 0;
   private attackPhase: AttackPhase = "startup";
-  private attackHitThisFrame = false;
-
-  private telegraphTimer = 0;
 
   private hitstop = 0;
   private hitstun = 0;
 
-  private health = 200;
+  private health = 900;
 
   private attackType: AttackType = "light";
   private attackStance: Stance = "mid";
   private stance: Stance = "mid";
+
+  private hasHitOpponent = false;
 
   private readonly SPEED = 200;
   private readonly GRAVITY = 100;
@@ -69,6 +66,16 @@ export default class Player {
 
   public input!: InputMap;
 
+  // ======== NEW: STAMINA SYSTEM ========
+  private stamina = 40; // enough for 4 light hits, 2 heavy, 3 blocks
+  public maxStamina = 40;
+
+  private staminaBlocks: Phaser.GameObjects.Rectangle[] = [];
+  private blockSize = 10;
+  private spacing = 2;
+  private staminaUI_X = 20;
+  private staminaUI_Y = 20;
+
   constructor(scene: Phaser.Scene, x: number, y: number, playerTag: string) {
     this.scene = scene;
 
@@ -80,15 +87,12 @@ export default class Player {
       .add.rectangle(0, 0, 60, 20, 0xffff00)
       .setVisible(false);
 
-    this.telegraphHitbox = scene
-      .add.rectangle(0, 0, 60, 20, 0xffff00, 0.3) // pale telegraph
-      .setVisible(false);
-
     this.blockHitbox = scene
       .add.rectangle(0, 0, 40, this.sprite.height / 3, 0x00ff00)
       .setOrigin(0.5, 1)
       .setVisible(false);
 
+    // Setup input
     if (playerTag === "p1") {
       this.input = {
         cursors: scene.input.keyboard!.createCursorKeys(),
@@ -99,6 +103,8 @@ export default class Player {
           dash: Phaser.Input.Keyboard.KeyCodes.F,
         }),
       };
+      this.staminaUI_X = 20;
+      this.staminaUI_Y = 40;
     } else {
       this.input = {
         cursors: {
@@ -114,6 +120,17 @@ export default class Player {
           dash: Phaser.Input.Keyboard.KeyCodes.I,
         }),
       };
+      this.staminaUI_X = 600;
+      this.staminaUI_Y = 20;
+    }
+
+    // Create stamina UI blocks
+    const maxBlocks = this.maxStamina / 5;
+    for (let i = 0; i < maxBlocks; i++) {
+      const block = scene.add
+        .rectangle(this.staminaUI_X + i * (this.blockSize + this.spacing), this.staminaUI_Y, this.blockSize, this.blockSize, 0x00ff00)
+        .setOrigin(0, 0);
+      this.staminaBlocks.push(block);
     }
   }
 
@@ -128,6 +145,7 @@ export default class Player {
     this.updateTimers(dt);
     this.updateGravity(dt);
     this.updateStance();
+    this.updateStaminaUI();
 
     const canAct = this.hitstun <= 0;
 
@@ -164,7 +182,6 @@ export default class Player {
     if (this.blockTimer > 0) this.blockTimer -= dt;
     this.lastBlockTime = Math.max(0, this.lastBlockTime - dt);
     if (this.dashTimer > 0) this.dashTimer -= dt;
-    if (this.telegraphTimer > 0) this.telegraphTimer -= dt;
   }
 
   private updateGravity(dt: number) {
@@ -203,9 +220,13 @@ export default class Player {
     if (this.dashCooldown > 0) return;
 
     const input = this.input.cursors;
-    this.dashDirection = input.left?.isDown ? -1 : input.right?.isDown ? 1 : this.facing;
+
+    if (input.left?.isDown) this.dashDirection = -1;
+    else if (input.right?.isDown) this.dashDirection = 1;
+    else this.dashDirection = this.facing;
 
     const towardOpponent = (opponent.sprite.x - this.sprite.x) * this.dashDirection > 0;
+
     if (towardOpponent) {
       this.velocityX = this.FORWARD_DASH_SPEED * this.dashDirection;
       this.dashTimer = this.FORWARD_DASH_TIME;
@@ -221,6 +242,7 @@ export default class Player {
   private updateDash(dt: number) {
     this.sprite.x += this.velocityX * dt;
     this.velocityX *= 0.9;
+
     if (this.dashTimer <= 0) {
       this.state = "idle";
       this.velocityX = 0;
@@ -229,12 +251,22 @@ export default class Player {
 
   private tryAttack() {
     if (this.attackCooldown > 0) return;
+
+    // Check stamina
+    const cost = 10; // light attack cost
+    if (this.stamina < cost) return;
+
     if (Phaser.Input.Keyboard.JustDown(this.input.keys.light)) {
       this.startAttack("light");
       this.attackCooldown = this.LIGHT_ATTACK_COOLDOWN;
+      this.spendStamina(10);
     } else if (Phaser.Input.Keyboard.JustDown(this.input.keys.heavy)) {
-      this.startAttack("heavy");
-      this.attackCooldown = this.HEAVY_ATTACK_COOLDOWN;
+      const heavyCost = 20;
+      if (this.stamina >= heavyCost) {
+        this.startAttack("heavy");
+        this.attackCooldown = this.HEAVY_ATTACK_COOLDOWN;
+        this.spendStamina(heavyCost);
+      }
     }
   }
 
@@ -243,46 +275,26 @@ export default class Player {
     this.attackType = type;
     this.attackStance = this.stance;
     this.attackPhase = "startup";
-    this.attackTimer = 0.3; // telegraph duration
-
-    this.attackHitThisFrame = false;
-    this.attackHitbox.setVisible(false);
-
-    // show telegraph
-    this.telegraphHitbox.setVisible(true);
-    this.telegraphTimer = 0.3;
-    this.updateTelegraphHitbox();
+    this.attackTimer = type === "light" ? 0.12 : 0.18;
+    this.hasHitOpponent = false;
   }
 
   private updateAttack(dt: number, opponent: Player) {
-    if (this.attackPhase === "startup") {
-      this.updateTelegraphHitbox();
-      if (this.telegraphTimer <= 0) {
-        this.telegraphHitbox.setVisible(false);
-        this.attackPhase = "active";
-        this.attackTimer = this.attackType === "light" ? 0.12 : 0.18;
-        this.attackHitbox.setVisible(true);
-        this.updateAttackHitbox();
-      }
-    } 
-    else if (this.attackPhase === "active") {
-      if (!this.attackHitThisFrame) {
-        this.updateAttackHitbox();
-        if (Phaser.Geom.Intersects.RectangleToRectangle(this.attackHitbox.getBounds(), opponent.sprite.getBounds())) {
-          opponent.applyHit(this.facing, 10, 0.2, this.getAttackDamage(), false, this.attackStance);
-          this.attackHitThisFrame = true;
-          this.attackHitbox.setVisible(false);
-        }
-      }
-
-      if (this.attackHitThisFrame || this.attackTimer <= 0) {
-        this.attackPhase = "recovery";
-        this.attackTimer = this.attackType === "light" ? 0.11 : 0.24;
-        this.attackHitbox.setVisible(false);
-      }
-    } 
-    else if (this.attackPhase === "recovery" && this.attackTimer <= 0) {
+    if (this.attackPhase === "startup" && this.attackTimer <= 0) {
+      this.attackPhase = "active";
+      this.attackTimer = this.attackType === "light" ? 0.12 : 0.18;
+      this.attackHitbox.setVisible(true);
+    } else if (this.attackPhase === "active" && this.attackTimer <= 0) {
+      this.attackPhase = "recovery";
+      this.attackTimer = this.attackType === "light" ? 0.11 : 0.24;
+      this.attackHitbox.setVisible(false);
+    } else if (this.attackPhase === "recovery" && this.attackTimer <= 0) {
       this.state = "idle";
+    }
+
+    if (this.attackPhase === "active") {
+      this.updateAttackHitbox();
+      this.checkAttackHit(opponent);
     }
   }
 
@@ -290,29 +302,34 @@ export default class Player {
     const x = this.sprite.x + this.facing * (this.sprite.width / 2 + this.attackHitbox.width / 2 + 2);
     const baseY = this.sprite.y - this.sprite.height * 0.5;
     const offset = this.sprite.height * 0.25;
+
     this.attackHitbox.x = x;
     this.attackHitbox.y =
       this.attackStance === "high" ? baseY - offset : this.attackStance === "low" ? baseY + offset : baseY;
   }
 
-  private updateTelegraphHitbox() {
-    const x = this.sprite.x + this.facing * (this.sprite.width / 2 + this.telegraphHitbox.width / 2 + 2);
-    const baseY = this.sprite.y - this.sprite.height * 0.5;
-    const offset = this.sprite.height * 0.25;
-    this.telegraphHitbox.x = x;
-    this.telegraphHitbox.y =
-      this.attackStance === "high" ? baseY - offset : this.attackStance === "low" ? baseY + offset : baseY;
+  private checkAttackHit(opponent: Player) {
+    if (this.hasHitOpponent) return;
+
+    if (Phaser.Geom.Intersects.RectangleToRectangle(this.attackHitbox.getBounds(), opponent.sprite.getBounds())) {
+      opponent.applyHit(this.facing, 10, 0.2, this.getAttackDamage(), false, this.attackStance);
+      this.hasHitOpponent = true;
+    }
   }
 
   private tryBlock() {
     if (!Phaser.Input.Keyboard.JustDown(this.input.keys.block)) return;
     if (this.blockCooldown > 0) return;
 
+    if (this.stamina < 5) return; // block cost
+
     this.state = "block";
     this.blockTimer = this.BLOCK_TIME;
     this.blockCooldown = this.BLOCK_COOLDOWN;
     this.lastBlockTime = this.perfectBlockWindow;
     this.blockHitbox.setVisible(true);
+
+    this.spendStamina(5);
   }
 
   private updateBlock(dt: number) {
@@ -328,12 +345,20 @@ export default class Player {
     const x = this.sprite.x;
     const bottom = this.sprite.y;
     const third = this.sprite.height / 3;
+
     let bottomY: number;
     switch (this.stance) {
-      case "high": bottomY = bottom - third * 2; break;
-      case "mid": bottomY = bottom - third; break;
-      case "low": bottomY = bottom; break;
+      case "high":
+        bottomY = bottom - third * 2;
+        break;
+      case "mid":
+        bottomY = bottom - third;
+        break;
+      case "low":
+        bottomY = bottom;
+        break;
     }
+
     this.blockHitbox.x = x;
     this.blockHitbox.y = bottomY;
   }
@@ -341,28 +366,28 @@ export default class Player {
   public applyHit(direction: -1 | 1, force: number, hitstun: number, damage: number, airborne: boolean, attackStance: Stance) {
     if (this.state === "dead") return;
 
-    if (this.state === "block" && this.lastBlockTime > 0) {
-      const stanceOrder: Stance[] = ["low", "mid", "high"];
-      const stanceDistance = Math.abs(stanceOrder.indexOf(this.stance) - stanceOrder.indexOf(attackStance));
+    // Perfect block detection
+    const perfectBlock = this.state === "block" && (this.lastBlockTime > 0 || this.stance === attackStance);
+    if (perfectBlock) {
+      this.hitstun = 0;
+      this.hitstop = 0.06;
+      this.velocityX = 0;
+      this.velocityY = 0;
+      this.state = "idle";
 
-      if (stanceDistance === 0) {
-        this.hitstun = 0;
-        this.hitstop = 0.06;
-        this.velocityX = 0;
-        this.velocityY = 0;
-        this.state = "idle";
-        this.blockHitbox.setVisible(false);
-        return;
-      } else if (stanceDistance === 1) {
-        this.health -= damage * this.partialBlockMultiplier;
-        this.hitstun = 0.1;
-        this.hitstop = 0.03;
-        this.velocityX = 0;
-        this.velocityY = 0;
-        this.state = "idle";
-        this.blockHitbox.setVisible(false);
-        return;
-      }
+      // Flash block hitbox
+      this.blockHitbox.setFillStyle(0xffffff, 1);
+      this.scene.tweens.add({
+        targets: this.blockHitbox,
+        alpha: 0,
+        duration: 150,
+        onComplete: () => this.blockHitbox.setAlpha(1).setFillStyle(0x00ff00),
+      });
+
+      // Reward stamina
+      this.gainStamina(5);
+
+      return;
     }
 
     this.health -= damage;
@@ -371,7 +396,6 @@ export default class Player {
       this.sprite.setVisible(false);
       this.attackHitbox.setVisible(false);
       this.blockHitbox.setVisible(false);
-      this.telegraphHitbox.setVisible(false);
       return;
     }
 
@@ -382,10 +406,47 @@ export default class Player {
     this.velocityY = airborne ? -10 : -10;
   }
 
-  public isAttacking() { return this.state === "attack" && this.attackPhase === "active"; }
-  public getStance(): Stance { return this.stance; }
-  public getAttackStance(): Stance { return this.attackStance; }
-  public getHealth(): number { return this.health; }
-  public getAttackDamage(): number { return this.attackType === "light" ? 50 : 100; }
-  public getAttackHitbox() { return this.attackHitbox; }
+  // ======== STAMINA METHODS ========
+  private spendStamina(amount: number) {
+    this.stamina = Math.max(0, this.stamina - amount);
+  }
+
+  private gainStamina(amount: number) {
+    this.stamina = Math.min(this.maxStamina, this.stamina + amount);
+  }
+
+  private updateStaminaUI() {
+    const units = Math.floor(this.stamina / 5);
+    this.staminaBlocks.forEach((block, i) => {
+      block.setVisible(i < units);
+    });
+  }
+
+  public getStamina() {
+    return this.stamina;
+  }
+
+  public getHealth() {
+    return this.health;
+  }
+
+  public getAttackDamage() {
+    return this.attackType === "light" ? 50 : 100;
+  }
+
+  public isAttacking() {
+    return this.state === "attack" && this.attackPhase === "active";
+  }
+
+  public getStance(): Stance {
+    return this.stance;
+  }
+
+  public getAttackStance(): Stance {
+    return this.attackStance;
+  }
+
+  public getAttackHitbox() {
+    return this.attackHitbox;
+  }
 }
