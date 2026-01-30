@@ -29,12 +29,18 @@ interface InputMap {
   keys: any;
 }
 
+type PlayerOptions = {
+  hurtboxWidth?: number;
+  hurtboxHeight?: number;
+};
+
 export default class Player {
   private static ATTACK_ID = 0;
 
   // ===== CORE =====
   private scene: Phaser.Scene;
   public sprite: Phaser.GameObjects.Sprite;
+  
   public opponent!: Player;
   private groundY: number;
 
@@ -64,12 +70,13 @@ export default class Player {
   private health = 20;
 
   // ===== STANCE =====
-  private stance: Stance = "mid";
-  private attackStance: Stance = "mid";
+  public stance: Stance = "mid";
+  public attackStance: Stance = "mid";
 
   // ===== HITBOXES =====
   public attackHitbox: Phaser.GameObjects.Rectangle;
   public blockHitbox: Phaser.GameObjects.Rectangle;
+  public hurtbox: Phaser.GameObjects.Rectangle;
 
   // ===== STAMINA =====
   private stamina = 40;
@@ -95,7 +102,8 @@ export default class Player {
     x: number,
     y: number,
     tag: "p1" | "p2",
-    groundY: number
+    groundY: number,
+    options: PlayerOptions = {}
   ) {
     this.scene = scene;
     this.groundY = groundY;
@@ -109,6 +117,21 @@ export default class Player {
     const scale = 0.85; // 80% size
     this.sprite.setScale(scale);
         }
+
+    // HURTBOX (area where this player can be hit)
+    const hurtboxWidth = tag === "p1" ? this.sprite.displayWidth * 0.9 : this.sprite.displayWidth;
+    const hurtboxHeight = tag === "p1" ? this.sprite.displayHeight * 0.9 : this.sprite.displayHeight;
+
+    this.hurtbox = scene.add.rectangle(
+      this.sprite.x,
+      this.sprite.y - this.sprite.displayHeight / 2, // align center
+      hurtboxWidth,
+      hurtboxHeight,
+      0xff0000,
+      0.2
+    );
+    this.hurtbox.setOrigin(0.5, 0.5);
+    this.hurtbox.setVisible(false); // hide by default
 
 
     // HITBOXES
@@ -204,6 +227,9 @@ export default class Player {
         }
         break;
     }
+
+    this.hurtbox.x = this.sprite.x;
+    this.hurtbox.y = this.sprite.y - this.sprite.displayHeight / 2;
   }
 
   // ================= MOTION =================
@@ -222,16 +248,25 @@ export default class Player {
     }
   }
 
+  private isMoving = false;
   private handleMovement(dt: number) {
     const c = this.input.cursors;
+    this.isMoving = false;
+
     if (c.left?.isDown) {
       this.sprite.x -= this.SPEED * dt;
       this.facing = -1;
+      this.isMoving = true;
     }
     if (c.right?.isDown) {
       this.sprite.x += this.SPEED * dt;
       this.facing = 1;
+      this.isMoving = true;
     }
+  }
+
+  getIsMoving() {
+    return this.isMoving;
   }
 
   // ================= DASH =================
@@ -391,8 +426,8 @@ export default class Player {
   }
 
   private resolvePlayerPush() {
-    const a = this.sprite.getBounds();
-    const b = this.opponent.sprite.getBounds();
+    const a = this.hurtbox.getBounds();
+    const b = this.opponent.hurtbox.getBounds();
     if (!Phaser.Geom.Intersects.RectangleToRectangle(a, b)) return;
 
     const overlap = a.width / 2 + b.width / 2 - Math.abs(a.centerX - b.centerX);
