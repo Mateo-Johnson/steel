@@ -178,7 +178,9 @@ export default class Player {
   // ================= UPDATE =================
 
   update(dt: number) {
-    if (this.state === "dead") return;
+    if (this.state === "dead") {
+      return;
+    }
 
     if (this.hitstop > 0) {
       this.hitstop -= dt;
@@ -392,7 +394,6 @@ export default class Player {
 
     if (this.health <= 0) {
       this.state = "dead";
-      this.sprite.setVisible(false);
     }
   }
 
@@ -537,4 +538,9 @@ export default class Player {
     } 
     return null; 
   }
+
+  public getStamina(): number {
+    return (this.stamina / 5) | 0; //return stamina in the boxes (8 boxes)
+  }
+
 }

@@ -28,25 +28,30 @@ export default class PlayerAnimationHandler {
 
   private resolveState(): PlayerAnimState {
     const state = this.player.getState();
+    const staminaBoxes = this.player.getStamina(); // 0–8
 
     switch (state) {
       case "idle":
-        return this.player.getIsMoving() ? "walk" : "idle";
+        return this.player.getIsMoving()
+          ? (`walk_${staminaBoxes}` as PlayerAnimState)
+          : (`idle_${staminaBoxes}` as PlayerAnimState);
 
       case "dash":
         return "dash";
 
       case "attack": {
         const type = this.player.getCurrentAttackType();
-        const stance = this.player.attackStance; // returns 'low' | 'mid' | 'high'
+        const stance = this.player.attackStance;
 
-        if (!type) return "idle";
+        if (!type) {
+          return `idle_${staminaBoxes}` as PlayerAnimState;
+        }
 
-        return `${type}_attack_${stance}` as PlayerAnimState;
+        return `attack_${type}_${stance}` as PlayerAnimState;
       }
 
       case "block": {
-        const stance = this.player.stance; // returns 'low' | 'mid' | 'high'
+        const stance = this.player.stance;
         return `block_${stance}` as PlayerAnimState;
       }
 
@@ -60,7 +65,7 @@ export default class PlayerAnimationHandler {
         return "dead";
 
       default:
-        return "idle";
+        return `idle_${staminaBoxes}` as PlayerAnimState;
     }
   }
 
@@ -69,7 +74,6 @@ export default class PlayerAnimationHandler {
   private play(anim: PlayerAnimState) {
     const sprite = this.player.sprite;
 
-    // flip handled here
     sprite.setFlipX(this.player.getFacing() === -1);
 
     if (this.tag === "p1") {
@@ -83,15 +87,38 @@ export default class PlayerAnimationHandler {
 
   private playP1(anim: PlayerAnimState, sprite: Phaser.GameObjects.Sprite) {
     switch (anim) {
-      case "idle":
-        sprite.anims.play("p1_idle", true);
+      // ---- Idle (stamina-based) ----
+      case "idle_8":
+      case "idle_7":
+      case "idle_6":
+      case "idle_5":
+      case "idle_4":
+      case "idle_3":
+      case "idle_2":
+      case "idle_1":
+      case "idle_0":
+        sprite.anims.play(`p1_${anim}`, true);
         break;
-      case "walk":
-        sprite.anims.play("p1_walk", true);
+
+      // ---- Walk (stamina-based) ----
+      case "walk_8":
+      case "walk_7":
+      case "walk_6":
+      case "walk_5":
+      case "walk_4":
+      case "walk_3":
+      case "walk_2":
+      case "walk_1":
+      case "walk_0":
+        sprite.anims.play(`p1_${anim}`, true);
         break;
+
+      // ---- Dash ----
       case "dash":
         sprite.anims.play("p1_dash", true);
         break;
+
+      // ---- Attacks ----
       case "attack_light_low":
         sprite.anims.play("p1_attack_light_low", true);
         break;
@@ -110,6 +137,8 @@ export default class PlayerAnimationHandler {
       case "attack_heavy_high":
         sprite.anims.play("p1_attack_heavy_high", true);
         break;
+
+      // ---- Block ----
       case "block_low":
         sprite.anims.play("p1_block_low", true);
         break;
@@ -119,6 +148,8 @@ export default class PlayerAnimationHandler {
       case "block_high":
         sprite.anims.play("p1_block_high", true);
         break;
+
+      // ---- Reactions ----
       case "hit":
         sprite.anims.play("p1_hit", true);
         break;
@@ -135,15 +166,38 @@ export default class PlayerAnimationHandler {
 
   private playP2(anim: PlayerAnimState, sprite: Phaser.GameObjects.Sprite) {
     switch (anim) {
-      case "idle":
-        sprite.anims.play("p2_idle", true);
+      // ---- Idle (stamina-based) ----
+      case "idle_8":
+      case "idle_7":
+      case "idle_6":
+      case "idle_5":
+      case "idle_4":
+      case "idle_3":
+      case "idle_2":
+      case "idle_1":
+      case "idle_0":
+        sprite.anims.play(`p2_${anim}`, true);
         break;
-      case "walk":
-        sprite.anims.play("p2_walk", true);
+
+      // ---- Walk (stamina-based) ----
+      case "walk_8":
+      case "walk_7":
+      case "walk_6":
+      case "walk_5":
+      case "walk_4":
+      case "walk_3":
+      case "walk_2":
+      case "walk_1":
+      case "walk_0":
+        sprite.anims.play(`p2_${anim}`, true);
         break;
+
+      // ---- Dash ----
       case "dash":
         sprite.anims.play("p2_dash", true);
         break;
+
+      // ---- Attacks ----
       case "attack_light_low":
         sprite.anims.play("p2_attack_light_low", true);
         break;
@@ -162,6 +216,8 @@ export default class PlayerAnimationHandler {
       case "attack_heavy_high":
         sprite.anims.play("p2_attack_heavy_high", true);
         break;
+
+      // ---- Block ----
       case "block_low":
         sprite.anims.play("p2_block_low", true);
         break;
@@ -171,6 +227,8 @@ export default class PlayerAnimationHandler {
       case "block_high":
         sprite.anims.play("p2_block_high", true);
         break;
+
+      // ---- Reactions ----
       case "hit":
         sprite.anims.play("p2_hit", true);
         break;

@@ -7,10 +7,82 @@ export default class BootScene extends Phaser.Scene {
 
   preload() {
 
-    this.load.spritesheet("p1_idle", "assets/animations/p1/idle.png", {
+    this.load.spritesheet("p1_idle_0", "assets/animations/p1/idle/idle_0.png", {
         frameWidth: 111,
         frameHeight: 138, 
     });
+    this.load.spritesheet("p1_idle_1", "assets/animations/p1/idle/idle_1.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_idle_2", "assets/animations/p1/idle/idle_2.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_idle_3", "assets/animations/p1/idle/idle_3.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_idle_4", "assets/animations/p1/idle/idle_4.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_idle_5", "assets/animations/p1/idle/idle_5.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_idle_6", "assets/animations/p1/idle/idle_6.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_idle_7", "assets/animations/p1/idle/idle_7.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_idle_8", "assets/animations/p1/idle/idle_8.png", {
+        frameWidth: 111,
+        frameHeight: 138, 
+    });
+
+    // walks
+    this.load.spritesheet("p1_walk_0", "assets/animations/p1/walk/walk_0.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_1", "assets/animations/p1/walk/walk_1.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_2", "assets/animations/p1/walk/walk_2.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_3", "assets/animations/p1/walk/walk_3.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_4", "assets/animations/p1/walk/walk_4.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_5", "assets/animations/p1/walk/walk_5.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_6", "assets/animations/p1/walk/walk_6.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_7", "assets/animations/p1/walk/walk_7.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+    this.load.spritesheet("p1_walk_8", "assets/animations/p1/walk/walk_8.png", {
+        frameWidth: 116,
+        frameHeight: 138, 
+    });
+
+
     this.load.spritesheet("p2_idle", "assets/animations/p2/idle.png", {
         frameWidth: 95,
         frameHeight: 155, 
@@ -21,10 +93,19 @@ export default class BootScene extends Phaser.Scene {
         frameHeight: 138, 
     });
 
-
     this.load.spritesheet("p1_dash", "assets/animations/p1/run.png", {
         frameWidth: 107,
         frameHeight: 130, 
+    });
+
+    this.load.spritesheet("p1_dead", "assets/animations/p1/dead.png", {
+        frameWidth: 146,
+        frameHeight: 132,
+    });
+
+    this.load.spritesheet("p1_attack_light_mid", "assets/animations/p1/light_mid.png", {
+        frameWidth: 197,
+        frameHeight: 132, 
     });
 
 

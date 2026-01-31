@@ -109,23 +109,121 @@ export default abstract class BaseFightScene extends Phaser.Scene {
 
     // IDLE
     this.anims.create({
-      key: "p1_idle",
+      key: "p1_idle_0",
+      frames: this.anims.generateFrameNumbers("p1_idle_0", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_idle_1",
+      frames: this.anims.generateFrameNumbers("p1_idle_1", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_idle_2",
       frames: this.anims.generateFrameNumbers("p1_idle", { start: 0, end: 5 }),
       frameRate: 8,
       repeat: -1,
     });
+    this.anims.create({
+      key: "p1_idle_3",
+      frames: this.anims.generateFrameNumbers("p1_idle_3", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_idle_4",
+      frames: this.anims.generateFrameNumbers("p1_idle_4", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_idle_5",
+      frames: this.anims.generateFrameNumbers("p1_idle_5", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_idle_6",
+      frames: this.anims.generateFrameNumbers("p1_idle_6", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_idle_7",
+      frames: this.anims.generateFrameNumbers("p1_idle_7", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_idle_8",
+      frames: this.anims.generateFrameNumbers("p1_idle_8", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+
+    //walk
+    this.anims.create({
+      key: "p1_walk_0",
+      frames: this.anims.generateFrameNumbers("p1_walk_0", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_1",
+      frames: this.anims.generateFrameNumbers("p1_walk_1", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_2",
+      frames: this.anims.generateFrameNumbers("p1_walk_2", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_3",
+      frames: this.anims.generateFrameNumbers("p1_walk_3", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_4",
+      frames: this.anims.generateFrameNumbers("p1_walk_4", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_5",
+      frames: this.anims.generateFrameNumbers("p1_walk_5", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_6",
+      frames: this.anims.generateFrameNumbers("p1_walk_6", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_7",
+      frames: this.anims.generateFrameNumbers("p1_walk_7", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "p1_walk_8",
+      frames: this.anims.generateFrameNumbers("p1_walk_8", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1,
+    });
+
 
     this.anims.create({
       key: "p2_idle",
       frames: this.anims.generateFrameNumbers("p2_idle", { start: 0, end: 4 }),
       frameRate: 8,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "p1_walk",
-      frames: this.anims.generateFrameNumbers("p1_walk", { start: 0, end: 5 }),
-      frameRate: 6,
       repeat: -1,
     });
 
@@ -136,5 +234,18 @@ export default abstract class BaseFightScene extends Phaser.Scene {
       repeat: -1,
     });
 
+    this.anims.create({
+      key: "p1_dead",
+      frames: this.anims.generateFrameNumbers("p1_dead", { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: 0,
+    });
+
+    this.anims.create({
+      key: "p1_attack_light_mid",
+      frames: this.anims.generateFrameNumbers("p1_attack_light_mid", { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1,
+    });
   }
 }
