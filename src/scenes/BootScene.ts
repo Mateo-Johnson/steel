@@ -82,16 +82,80 @@ export default class BootScene extends Phaser.Scene {
         frameHeight: 138, 
     });
 
-
-    this.load.spritesheet("p2_idle", "assets/animations/p2/idle.png", {
+    this.load.spritesheet("p2_idle_0", "assets/animations/p2/idle/idle_0.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_1", "assets/animations/p2/idle/idle_1.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_2", "assets/animations/p2/idle/idle_2.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_3", "assets/animations/p2/idle/idle_3.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_4", "assets/animations/p2/idle/idle_4.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_5", "assets/animations/p2/idle/idle_5.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_6", "assets/animations/p2/idle/idle_6.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_7", "assets/animations/p2/idle/idle_7.png", {
+        frameWidth: 95,
+        frameHeight: 155, 
+    });
+    this.load.spritesheet("p2_idle_8", "assets/animations/p2/idle/idle_8.png", {
         frameWidth: 95,
         frameHeight: 155, 
     });
 
-    this.load.spritesheet("p1_walk", "assets/animations/p1/walk.png", {
-        frameWidth: 116,
-        frameHeight: 138, 
+    this.load.spritesheet("p2_walk_0", "assets/animations/p2/walk/walk_0.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
     });
+    this.load.spritesheet("p2_walk_1", "assets/animations/p2/walk/walk_1.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+    this.load.spritesheet("p2_walk_2", "assets/animations/p2/walk/walk_2.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+    this.load.spritesheet("p2_walk_3", "assets/animations/p2/walk/walk_3.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+    this.load.spritesheet("p2_walk_4", "assets/animations/p2/walk/walk_4.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+    this.load.spritesheet("p2_walk_5", "assets/animations/p2/walk/walk_5.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+    this.load.spritesheet("p2_walk_6", "assets/animations/p2/walk/walk_6.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+    this.load.spritesheet("p2_walk_7", "assets/animations/p2/walk/walk_7.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+    this.load.spritesheet("p2_walk_8", "assets/animations/p2/walk/walk_8.png", {
+        frameWidth: 99,
+        frameHeight: 160, 
+    });
+
 
     this.load.spritesheet("p1_dash", "assets/animations/p1/run.png", {
         frameWidth: 107,
