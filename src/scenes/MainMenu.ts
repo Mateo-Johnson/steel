@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 
 export default class MainMenu extends Phaser.Scene {
-  private options: Phaser.GameObjects.Text[] = [];
+  private options: Phaser.GameObjects.Image[] = [];
   private selectedIndex = 0;
 
   private readonly menuItems = [
@@ -12,49 +12,74 @@ export default class MainMenu extends Phaser.Scene {
     "Quit"
   ];
 
+  private readonly buttonImages: Record<string, string> = {
+    "Start Game": "buttonStart",
+    "Training": "buttonTraining",
+    "Options": "buttonOptions",
+    "Credits": "buttonCredits",
+    "Quit": "buttonQuit"
+  };
+
   constructor() {
     super("MainMenu");
   }
 
-  create() {
-    const {width} = this.scale;
+  preload() {
+    this.load.image("starter", "assets/starter.png");
 
-    // Clear old menu objects if scene is restarted
+    Object.values(this.buttonImages).forEach(key => {
+      this.load.image(key, `assets/${key}.png`);
+    });
+  }
+
+  create() {
+    const { width, height } = this.scale;
+
+    const starterImage = this.add.image(width / 2, height / 2, "starter")
+      .setOrigin(0.5);
+
+    const scaleX = width / starterImage.width;
+    const scaleY = height / starterImage.height;
+    starterImage.setScale(Math.min(scaleX, scaleY));
+
+    this.input.keyboard!.once("keydown", () => {
+      this.initMenu();
+    });
+  }
+
+  private initMenu() {
+    const { width } = this.scale;
+
     this.options = [];
     this.selectedIndex = 0;
 
-    // Title
-    this.add.text(width / 2, 120, "my game", {
-      fontSize: "48px",
-      color: "#ffffff"
-    }).setOrigin(0.5);
-
-    // Menu items
-    const startY = 220;
+    const startY = 320;
     const spacing = 50;
 
     this.menuItems.forEach((label, index) => {
-      const text = this.add.text(width / 2, startY + index * spacing, label, {
-        fontSize: "28px",
-        color: "#888888"
-      })
+      const yPos = startY + index * spacing;
+
+      const image = this.add.image(width / 2, yPos, this.buttonImages[label])
         .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+        .setInteractive({ useHandCursor: true })
+        .setAlpha(0);
 
-      // Mouse hover
-      text.on("pointerover", () => {
-        this.select(index);
-      });
+      image.on("pointerover", () => this.select(index));
+      image.on("pointerdown", () => this.activate(index));
 
-      // Mouse click
-      text.on("pointerdown", () => {
-        this.activate(index);
-      });
-
-      this.options.push(text);
+      this.options.push(image);
     });
 
     this.updateSelection();
+
+    // Fade-in
+    this.tweens.add({
+      targets: this.options,
+      alpha: 1,
+      duration: 350,
+      ease: "Power1",
+      stagger: 80
+    });
 
     // Keyboard input
     const keys = this.input.keyboard?.addKeys({
@@ -63,17 +88,14 @@ export default class MainMenu extends Phaser.Scene {
       enter: Phaser.Input.Keyboard.KeyCodes.ENTER
     }) as any;
 
-    if (keys) {
-      keys.up.on("down", () => this.moveSelection(-1));
-      keys.down.on("down", () => this.moveSelection(1));
-      keys.enter.on("down", () => this.activate(this.selectedIndex));
-    }
+    keys.up.on("down", () => this.moveSelection(-1));
+    keys.down.on("down", () => this.moveSelection(1));
+    keys.enter.on("down", () => this.activate(this.selectedIndex));
   }
 
   private moveSelection(dir: number) {
     this.selectedIndex =
-      (this.selectedIndex + dir + this.options.length) %
-      this.options.length;
+      (this.selectedIndex + dir + this.options.length) % this.options.length;
 
     this.updateSelection();
   }
@@ -84,41 +106,43 @@ export default class MainMenu extends Phaser.Scene {
   }
 
   private updateSelection() {
-    this.options.forEach((item, index) => {
-      item.setColor(index === this.selectedIndex ? "#ffffff" : "#888888");
-      item.setScale(index === this.selectedIndex ? 1.1 : 1.0);
+    this.options.forEach((image, index) => {
+      this.tweens.killTweensOf(image);
+
+      this.tweens.add({
+        targets: image,
+        scale: index === this.selectedIndex ? 0.35 : 0.3,
+        duration: 120,
+        ease: "Power2"
+      });
     });
   }
 
-private activate(index: number) {
-  const choice = this.menuItems[index];
+  private activate(index: number) {
+    const choice = this.menuItems[index];
 
-  switch (choice) {
-    case "Start Game":
-      // Array of possible scenes
-      const gameScenes = ["TempleScene", "PagodaScene"];
-      // Pick a random one
-      const randomScene =
-        gameScenes[Math.floor(Math.random() * gameScenes.length)];
-      this.scene.start(randomScene);
-      break;
+    switch (choice) {
+      case "Start Game": {
+        const scenes = ["TempleScene", "PagodaScene"];
+        this.scene.start(Phaser.Utils.Array.GetRandom(scenes));
+        break;
+      }
 
-    case "Training":
-      this.scene.start("TrainingScene");
-      break;
+      case "Training":
+        this.scene.start("TrainingScene");
+        break;
 
-    case "Options":
-      console.log("Options selected");
-      break;
+      case "Options":
+        console.log("Options selected");
+        break;
 
-    case "Credits":
-      console.log("Credits selected");
-      break;
+      case "Credits":
+        console.log("Credits selected");
+        break;
 
-    case "Quit":
-      console.log("Quit selected");
-      break;
+      case "Quit":
+        console.log("Quit selected");
+        break;
+    }
   }
-}
-
 }

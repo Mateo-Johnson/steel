@@ -211,6 +211,31 @@ export default class BootScene extends Phaser.Scene {
       "bg-bamboo",
       "assets/backgrounds/bamboobg.png"
     );
+    this.load.image(
+    "starter",
+    "assets/starter.png"
+    );
+
+    this.load.image(
+    "buttonStart",
+    "assets/buttons/start.png"
+    );
+        this.load.image(
+    "buttonTraining",
+    "assets/buttons/training.png"
+    );
+        this.load.image(
+    "buttonOptions",
+    "assets/buttons/options.png"
+    );
+        this.load.image(
+    "buttonCredits",
+    "assets/buttons/credits.png"
+    );
+        this.load.image(
+    "buttonQuit",
+    "assets/buttons/quit.png"
+    );
 
     // this.load.spritesheet("player_run", "assets/player_run.png", {
     // frameWidth: 150,
