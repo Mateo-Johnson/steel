@@ -87,7 +87,7 @@ export default class Player {
   private readonly DASH_COOLDOWN = 0.5;
   private readonly BLOCK_TIME = 0.4;
   private readonly BLOCK_COOLDOWN = 0.3;
-  private readonly PERFECT_BLOCK_WINDOW = 0.12;
+  private readonly PERFECT_BLOCK_WINDOW = 0.18;
 
   public input!: InputMap;
 
