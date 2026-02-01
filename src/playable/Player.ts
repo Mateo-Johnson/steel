@@ -78,7 +78,6 @@ export default class Player {
   public readonly maxStamina = 40;
   private staminaBlocks: Phaser.GameObjects.Rectangle[] = [];
   private readonly STAMINA_UNIT = 5;
-  private readonly STAMINA_REGEN_RATE = 1;
 
   // ===== CONSTANTS =====
   private readonly SPEED = 200;
@@ -184,7 +183,6 @@ export default class Player {
     this.updateTimers(dt);
     this.updatePhysics(dt);
     this.updateStance();
-    this.regenStamina(dt);
     this.updateStaminaUI();
     this.resolvePlayerPush();
 
@@ -455,9 +453,6 @@ export default class Player {
     this.stamina = Math.min(this.maxStamina, this.stamina + v);
   }
 
-  private regenStamina(dt: number) {
-    this.gainStamina(this.STAMINA_REGEN_RATE * dt);
-  }
 
   private updateStaminaUI() {
     const units = Math.floor(this.stamina / this.STAMINA_UNIT);
