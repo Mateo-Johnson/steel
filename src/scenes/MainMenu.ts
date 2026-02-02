@@ -123,8 +123,7 @@ export default class MainMenu extends Phaser.Scene {
 
     switch (choice) {
       case "Start Game": {
-        const scenes = ["TempleScene", "PagodaScene"];
-        this.scene.start(Phaser.Utils.Array.GetRandom(scenes));
+        this.scene.start("LobbyScene");
         break;
       }
 

@@ -3,6 +3,7 @@ import TrainingScene from "./scenes/TrainingScene";
 import BootScene from "./scenes/BootScene";
 import TempleScene from "./scenes/TempleScene";
 import PagodaScene from "./scenes/PagodaScene";
+import LobbyScene from "./scenes/LobbyScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -10,7 +11,7 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 600,
   backgroundColor: "#1d1d1d",
   parent: "game",
-  scene: [BootScene, MainMenu, TrainingScene, TempleScene, PagodaScene],
+  scene: [BootScene, MainMenu, LobbyScene, TrainingScene, TempleScene, PagodaScene],
   physics: {
     default: "arcade",
     arcade: {

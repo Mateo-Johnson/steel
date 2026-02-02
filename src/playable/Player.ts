@@ -11,6 +11,18 @@ export type State =
   | "stunned"
   | "dead";
 
+  export type InputFrame = {
+    left: boolean;
+    right: boolean;
+    up: boolean;
+    down: boolean;
+    light: boolean;
+    heavy: boolean;
+    block: boolean;
+    dash: boolean;
+  };
+
+
 export type AttackPhase = "startup" | "active" | "recovery";
 
 export type AttackData = {
@@ -48,7 +60,7 @@ export default class Player {
 
   // ===== STATE =====
   private state: State = "idle";
-  private attackPhase: AttackPhase = "startup";
+  public attackPhase: AttackPhase = "startup";
   private facing: -1 | 1 = 1;
 
   // ===== MOTION =====
@@ -201,7 +213,7 @@ export default class Player {
 
   // ================= UPDATE =================
 
-  update(dt: number) {
+   update(dt: number, input: InputFrame) {
     if (this.state === "dead") return;
 
     if (this.hitstop > 0) {
@@ -211,7 +223,7 @@ export default class Player {
 
     this.updateTimers(dt);
     this.updatePhysics(dt);
-    this.updateStance();
+    this.updateStance(input);
     this.updateStaminaUI();
     this.resolvePlayerPush();
 
@@ -229,10 +241,10 @@ export default class Player {
 
     switch (this.state) {
       case "idle":
-        this.handleMovement(dt);
-        this.tryDash();
-        this.tryAttack();
-        this.tryBlock();
+        this.handleMovement(dt, input);
+        this.tryDash(input);
+        this.tryAttack(input);
+        this.tryBlock(input);
         break;
 
       case "dash":
@@ -275,21 +287,22 @@ export default class Player {
   }
 
   private isMoving = false;
-  private handleMovement(dt: number) {
-    const c = this.input.cursors;
+  private handleMovement(dt: number, input: InputFrame) {
     this.isMoving = false;
 
-    if (c.left?.isDown) {
+    if (input.left) {
       this.sprite.x -= this.SPEED * dt;
       this.facing = -1;
       this.isMoving = true;
     }
-    if (c.right?.isDown) {
+
+    if (input.right) {
       this.sprite.x += this.SPEED * dt;
       this.facing = 1;
       this.isMoving = true;
     }
   }
+
 
   getIsMoving() {
     return this.isMoving;
@@ -297,27 +310,25 @@ export default class Player {
 
   // ================= DASH =================
 
-  private tryDash() {
-    // normal dash
-    if (this.state === "idle") {
-      if (this.dashCooldown > 0) return;
-      if (!Phaser.Input.Keyboard.JustDown(this.input.keys.dash)) return;
+  private tryDash(input: InputFrame) {
+    if (!input.dash) return;
+
+    if (this.state === "idle" && this.dashCooldown <= 0) {
       this.startDash();
-      return;
     }
 
     if (
       this.state === "attack" &&
       this.attackPhase === "recovery" &&
       this.currentAttack?.canDashCancel &&
-      this.stamina >= 5 &&
-      Phaser.Input.Keyboard.JustDown(this.input.keys.dash)
+      this.stamina >= 5
     ) {
       this.spendStamina(5);
       this.currentAttack = undefined;
       this.startDash();
     }
   }
+
 
   private startDash() {
     const towardOpponent =
@@ -332,15 +343,15 @@ export default class Player {
 
   // ================= ATTACK =================
 
-  private tryAttack() {
+  private tryAttack(input: InputFrame) {
     if (this.attackCooldown > 0) return;
 
-    if (Phaser.Input.Keyboard.JustDown(this.input.keys.light) && this.stamina >= 10) {
+    if (input.light && this.stamina >= 10) {
       this.spendStamina(10);
       this.beginAttack("light");
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.input.keys.heavy) && this.stamina >= 20) {
+    if (input.heavy && this.stamina >= 20) {
       this.spendStamina(20);
       this.beginAttack("heavy");
     }
@@ -391,9 +402,9 @@ export default class Player {
 
   // ================= BLOCK =================
 
-  private tryBlock() {
+  private tryBlock(input: InputFrame) {
+    if (!input.block) return;
     if (this.blockCooldown > 0) return;
-    if (!Phaser.Input.Keyboard.JustDown(this.input.keys.block)) return;
     if (this.stamina < 5) return;
 
     this.spendStamina(5);
@@ -499,12 +510,12 @@ export default class Player {
 
   // ================= HITBOX HELPERS =================
 
-  private updateAttackHitbox() {
+  public updateAttackHitbox() {
     this.attackHitbox.x = this.sprite.x + this.facing * 45;
     this.attackHitbox.y = this.getLevelY(this.attackStance);
   }
 
-  private updateBlockHitbox() {
+  public updateBlockHitbox() {
     this.blockHitbox.x = this.sprite.x;
     this.blockHitbox.y = this.getLevelY(this.stance);
   }
@@ -563,12 +574,12 @@ export default class Player {
     this.stunTimer = Math.max(0, this.stunTimer - dt);
   }
 
-  private updateStance() {
-    const c = this.input.cursors;
-    if (c.up?.isDown) this.stance = "high";
-    else if (c.down?.isDown) this.stance = "low";
+  private updateStance(input: InputFrame) {
+    if (input.up) this.stance = "high";
+    else if (input.down) this.stance = "low";
     else this.stance = "mid";
   }
+
 
   // ================= READ-ONLY API =================
 
@@ -627,4 +638,96 @@ export default class Player {
   private getLevelY(stance: Stance): number {
     return this.groundY - this.LEVEL_OFFSET[stance];
   }
+
+  // ================= NETWORK SYNC =================
+// ================= NETWORK SYNC =================
+
+// Add these properties at the top of the Player class (near other properties)
+private targetX: number = 0;
+private targetY: number = 0;
+private isRemotePlayer: boolean = false;
+private interpolationSpeed: number = 0.2;
+
+public syncFromServer(serverState: any) {
+  // Mark this as a remote player
+  this.isRemotePlayer = true;
+  
+  // Set target positions instead of snapping
+  this.targetX = serverState.x;
+  this.targetY = this.sprite.y;
+  
+  // Sync facing and flip
+  this.facing = serverState.facing;
+  this.sprite.setFlipX(this.facing === -1);
+  
+  // Sync state - IMMEDIATELY (no interpolation)
+  this.state = serverState.state;
+  this.stance = serverState.stance;
+  this.attackPhase = serverState.attack?.phase || "startup"; // ADD THIS
+  
+  // Sync combat (these should be instant)
+  this.health = serverState.health;
+  this.stamina = serverState.stamina;
+  
+  // Sync attack if present
+  if (serverState.attack) {
+    this.currentAttack = {
+      id: serverState.attack.id || Player.ATTACK_ID++,
+      owner: this,
+      type: serverState.attack.type,
+      stance: serverState.attack.stance,
+      damage: serverState.attack.type === "light" ? 10 : 20,
+      hitstun: serverState.attack.type === "light" ? 0.15 : 0.25,
+      knockback: serverState.attack.type === "light" ? 160 : 260,
+      hasHit: serverState.attack.hasHit,
+      canDashCancel: serverState.attack.type === "light",
+      canAttackCancel: serverState.attack.type === "light",
+    };
+    this.attackStance = serverState.attack.stance;
+  } else {
+    this.currentAttack = undefined;
+  }
+}
+
+public interpolateToTarget() {
+  if (!this.isRemotePlayer) return;
+  
+  // Smoothly move toward target position
+  const dx = this.targetX - this.sprite.x;
+  
+  // If very close, snap to target
+  if (Math.abs(dx) < 1) {
+    this.sprite.x = this.targetX;
+  } else {
+    // Lerp toward target
+    this.sprite.x += dx * this.interpolationSpeed;
+  }
+}
+
+public updateRemoteVisuals() {
+  if (!this.isRemotePlayer) return;
+  
+  // Update attack hitbox visibility based on state
+  if (this.state === "attack" && this.attackPhase === "active" && this.currentAttack) {
+    this.attackHitbox.setVisible(true);
+    this.updateAttackHitbox();
+  } else {
+    this.attackHitbox.setVisible(false);
+  }
+  
+  // Update block hitbox visibility
+  if (this.state === "block") {
+    this.blockHitbox.setVisible(true);
+    this.updateBlockHitbox();
+  } else {
+    this.blockHitbox.setVisible(false);
+  }
+  
+  // Update hurtbox positions
+  this.hurtbox.x = this.sprite.x;
+  this.hurtbox.y = this.sprite.y - this.sprite.displayHeight / 2;
+  this.hurtboxLow.x = this.sprite.x;
+  this.hurtboxMid.x = this.sprite.x;
+  this.hurtboxHigh.x = this.sprite.x;
+}
 }
