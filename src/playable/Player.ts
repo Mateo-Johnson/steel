@@ -36,8 +36,8 @@ export default class Player {
 
   private readonly LEVEL_OFFSET: Record<Stance, number> = {
     low: 40,   
-    mid: 90,
-    high: 140,
+    mid: 60,
+    high: 80,
   };
 
   // ===== CORE =====

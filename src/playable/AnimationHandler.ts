@@ -228,7 +228,12 @@ export default class PlayerAnimationHandler {
 
       // ---- Reactions ----
       case "hit":
+        sprite.x += sprite.flipX ? -50 : 50;
+        sprite.setScale(0.7);
         sprite.anims.play("p2_hit", true);
+        sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+          sprite.setScale(1);
+        });
         break;
       case "stunned":
         sprite.anims.play("p2_stunned", true);

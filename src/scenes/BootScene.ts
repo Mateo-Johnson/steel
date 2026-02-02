@@ -161,8 +161,12 @@ export default class BootScene extends Phaser.Scene {
         frameWidth: 107,
         frameHeight: 130, 
     });
+    this.load.spritesheet("p2_hit", "assets/animations/p2/hurt.png", {
+        frameWidth: 106,
+        frameHeight: 180, 
+    });
 
-    this.load.spritesheet("p1_block_high", "assets/animations/p1/block_high.png", {
+    this.load.spritesheet("p1_block_mid", "assets/animations/p1/block_mid.png", {
         frameWidth: 94,
         frameHeight: 116, 
     });
@@ -188,7 +192,26 @@ export default class BootScene extends Phaser.Scene {
         frameWidth: 170,
         frameHeight: 159, 
     });
-
+    this.load.spritesheet("p2_block_low", "assets/animations/p2/block_low.png", {
+        frameWidth: 145,
+        frameHeight: 158, 
+    }); //
+    this.load.spritesheet("p2_block_mid", "assets/animations/p2/block_mid.png", {
+        frameWidth: 105,
+        frameHeight: 187, 
+    }); //
+    this.load.spritesheet("p2_attack_light_low", "assets/animations/p2/light_low.png", {
+        frameWidth: 205,
+        frameHeight: 178, 
+    });
+    this.load.spritesheet("p2_attack_light_high", "assets/animations/p2/light_high.png", {
+        frameWidth: 163,
+        frameHeight: 168, 
+    });
+    this.load.spritesheet("p2_attack_heavy_mid", "assets/animations/p2/heavy_mid.png", {
+        frameWidth: 150,
+        frameHeight: 158, 
+    });
 
 
     this.load.image(
