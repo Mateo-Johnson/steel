@@ -22,6 +22,8 @@ export type AttackData = {
   hitstun: number;
   knockback: number;
   hasHit: boolean;
+  canDashCancel: boolean;
+  canAttackCancel: boolean;
 };
 
 interface InputMap {
@@ -32,10 +34,15 @@ interface InputMap {
 export default class Player {
   private static ATTACK_ID = 0;
 
+  private readonly LEVEL_OFFSET: Record<Stance, number> = {
+    low: 40,   
+    mid: 90,
+    high: 140,
+  };
+
   // ===== CORE =====
   private scene: Phaser.Scene;
   public sprite: Phaser.GameObjects.Sprite;
-  
   public opponent!: Player;
   private groundY: number;
 
@@ -72,6 +79,9 @@ export default class Player {
   public attackHitbox: Phaser.GameObjects.Rectangle;
   public blockHitbox: Phaser.GameObjects.Rectangle;
   public hurtbox: Phaser.GameObjects.Rectangle;
+  public hurtboxLow: Phaser.GameObjects.Rectangle;
+  public hurtboxMid: Phaser.GameObjects.Rectangle;
+  public hurtboxHigh: Phaser.GameObjects.Rectangle;
 
   // ===== STAMINA =====
   private stamina = 40;
@@ -82,8 +92,8 @@ export default class Player {
   // ===== CONSTANTS =====
   private readonly SPEED = 200;
   private readonly GRAVITY = 100;
-  private readonly FORWARD_DASH_SPEED = 1000;
-  private readonly BACK_DASH_SPEED = 500;
+  private readonly FORWARD_DASH_SPEED = 1500;
+  private readonly BACK_DASH_SPEED = 700;
   private readonly DASH_COOLDOWN = 0.5;
   private readonly BLOCK_TIME = 0.4;
   private readonly BLOCK_COOLDOWN = 0.3;
@@ -101,37 +111,58 @@ export default class Player {
     this.scene = scene;
     this.groundY = groundY;
 
-    // VISUAL ONLY (animation handler controls anims)
-    this.sprite = scene.add
-      .sprite(x, y, "player", 0)
-      .setOrigin(0.5, 1);
+    // VISUAL ONLY
+    this.sprite = scene.add.sprite(x, y, "player", 0).setOrigin(0.5, 1);
 
-        if (tag === "p1") {
-    const scale = 0.85; // 80% size
-    this.sprite.setScale(scale);
-        }
+    if (tag === "p1") this.sprite.setScale(0.85);
 
-    // HURTBOX (area where this player can be hit)
-    const hurtboxWidth = tag === "p1" ? this.sprite.displayWidth * 0.9 : this.sprite.displayWidth;
-    const hurtboxHeight = tag === "p1" ? this.sprite.displayHeight * 0.9 : this.sprite.displayHeight;
+    // HURTBOX
+    const hurtboxWidth =
+      tag === "p1" ? this.sprite.displayWidth * 0.9 : this.sprite.displayWidth;
+    const hurtboxHeight =
+      tag === "p1" ? this.sprite.displayHeight * 0.9 : this.sprite.displayHeight;
+    this.hurtbox = scene.add
+      .rectangle(
+        this.sprite.x,
+        this.sprite.y - this.sprite.displayHeight / 2,
+        hurtboxWidth,
+        hurtboxHeight,
+        0xff0000,
+        0.2,
+      )
+      .setOrigin(0.5, 0.5)
+      .setVisible(false);
 
-    this.hurtbox = scene.add.rectangle(
+    this.hurtboxLow = scene.add.rectangle(
       this.sprite.x,
-      this.sprite.y - this.sprite.displayHeight / 2, // align center
-      hurtboxWidth,
-      hurtboxHeight,
+      this.getLevelY("low"),
+      30,
+      20,
       0xff0000,
       0.2
-    );
-    this.hurtbox.setOrigin(0.5, 0.5);
-    this.hurtbox.setVisible(false); // hide by default
+    ).setOrigin(0.5).setVisible(false);
+
+    this.hurtboxMid = scene.add.rectangle(
+      this.sprite.x,
+      this.getLevelY("mid"),
+      30,
+      20,
+      0xff0000,
+      0.2
+    ).setOrigin(0.5).setVisible(false);
+
+    this.hurtboxHigh = scene.add.rectangle(
+      this.sprite.x,
+      this.getLevelY("high"),
+      30,
+      20,
+      0xff0000,
+      0.2
+    ).setOrigin(0.5).setVisible(false);
 
 
     // HITBOXES
-    this.attackHitbox = scene.add
-      .rectangle(0, 0, 60, 20, 0xffff00)
-      .setVisible(false);
-
+    this.attackHitbox = scene.add.rectangle(0, 0, 60, 20, 0xffff00).setVisible(false);
     this.blockHitbox = scene.add
       .rectangle(0, 0, 40, this.sprite.displayHeight / 3, 0x00ff00)
       .setOrigin(0.5, 1)
@@ -171,9 +202,7 @@ export default class Player {
   // ================= UPDATE =================
 
   update(dt: number) {
-    if (this.state === "dead") {
-      return;
-    }
+    if (this.state === "dead") return;
 
     if (this.hitstop > 0) {
       this.hitstop -= dt;
@@ -185,6 +214,10 @@ export default class Player {
     this.updateStance();
     this.updateStaminaUI();
     this.resolvePlayerPush();
+
+    this.hurtboxLow.x = this.sprite.x;
+    this.hurtboxMid.x = this.sprite.x;
+    this.hurtboxHigh.x = this.sprite.x;
 
     if (this.state === "stunned") {
       if (this.stunTimer <= 0) this.state = "idle";
@@ -233,7 +266,6 @@ export default class Player {
     this.sprite.x += this.velocityX * dt;
     this.sprite.y += this.velocityY;
     this.velocityX *= 0.85;
-
     this.sprite.setFlipX(this.facing === -1);
 
     if (this.sprite.y >= this.groundY) {
@@ -266,9 +298,28 @@ export default class Player {
   // ================= DASH =================
 
   private tryDash() {
-    if (this.dashCooldown > 0) return;
-    if (!Phaser.Input.Keyboard.JustDown(this.input.keys.dash)) return;
+    // normal dash
+    if (this.state === "idle") {
+      if (this.dashCooldown > 0) return;
+      if (!Phaser.Input.Keyboard.JustDown(this.input.keys.dash)) return;
+      this.startDash();
+      return;
+    }
 
+    if (
+      this.state === "attack" &&
+      this.attackPhase === "recovery" &&
+      this.currentAttack?.canDashCancel &&
+      this.stamina >= 5 &&
+      Phaser.Input.Keyboard.JustDown(this.input.keys.dash)
+    ) {
+      this.spendStamina(5);
+      this.currentAttack = undefined;
+      this.startDash();
+    }
+  }
+
+  private startDash() {
     const towardOpponent =
       (this.opponent.sprite.x > this.sprite.x ? 1 : -1) === this.facing;
 
@@ -276,8 +327,7 @@ export default class Player {
     this.dashCooldown = this.DASH_COOLDOWN;
     this.dashTimer = towardOpponent ? 0.12 : 0.08;
     this.velocityX =
-      (towardOpponent ? this.FORWARD_DASH_SPEED : this.BACK_DASH_SPEED) *
-      this.facing;
+      (towardOpponent ? this.FORWARD_DASH_SPEED : this.BACK_DASH_SPEED) * this.facing;
   }
 
   // ================= ATTACK =================
@@ -310,11 +360,15 @@ export default class Player {
       hitstun: type === "light" ? 0.15 : 0.25,
       knockback: type === "light" ? 160 : 260,
       hasHit: false,
+
+      canDashCancel: type === "light",
+      canAttackCancel: type === "light",
     };
 
     this.attackTimer = type === "light" ? 0.12 : 0.18;
     this.attackCooldown = type === "light" ? 0.35 : 0.6;
   }
+
 
   private updateAttack() {
     if (this.attackTimer > 0) return;
@@ -350,11 +404,66 @@ export default class Player {
     this.blockHitbox.setVisible(true);
   }
 
+  // ================= CLASH =================
+
+  public isAttackActive(): boolean {
+    return this.state === "attack" && this.attackPhase === "active";
+  }
+
+  public resolveClash(opponent: Player) {
+    // cancel attacks
+    this.state = "idle";
+    opponent.state = "idle";
+    this.attackPhase = "recovery";
+    opponent.attackPhase = "recovery";
+    this.currentAttack = undefined;
+    opponent.currentAttack = undefined;
+    this.attackHitbox.setVisible(false);
+    opponent.attackHitbox.setVisible(false);
+
+    // push apart
+    const dir = this.sprite.x < opponent.sprite.x ? -1 : 1;
+    const CLASH_PUSH = 120;
+    this.velocityX = dir * CLASH_PUSH;
+    opponent.velocityX = -dir * CLASH_PUSH;
+
+    // stamina penalty
+    this.spendStamina(5);
+    opponent.spendStamina(5);
+
+    // hitstop
+    this.hitstop = 0.05;
+    opponent.hitstop = 0.05;
+  }
+
   // ================= COLLISION / COMBAT =================
 
   public resolveIncomingAttack(attack: AttackData) {
     const blocking = this.state === "block";
-    const stanceMatch = this.stance === attack.stance;
+    let hitboxMatch = false;
+
+    // determine which hurtbox to check
+    switch (attack.stance) {
+      case "low":
+        hitboxMatch = Phaser.Geom.Intersects.RectangleToRectangle(
+          attack.owner.attackHitbox.getBounds(),
+          this.hurtboxLow.getBounds()
+        );
+        break;
+      case "mid":
+        hitboxMatch = Phaser.Geom.Intersects.RectangleToRectangle(
+          attack.owner.attackHitbox.getBounds(),
+          this.hurtboxMid.getBounds()
+        );
+        break;
+      case "high":
+        hitboxMatch = Phaser.Geom.Intersects.RectangleToRectangle(
+          attack.owner.attackHitbox.getBounds(),
+          this.hurtboxHigh.getBounds()
+        );
+        break;
+    }
+
     const perfect = blocking && this.lastBlockTime > 0;
 
     if (perfect) {
@@ -364,58 +473,40 @@ export default class Player {
       return;
     }
 
-    if (blocking && attack.type === "heavy" && stanceMatch) {
+    if (blocking && hitboxMatch && attack.type === "heavy") {
       this.state = "stunned";
       this.stunTimer = 1;
       return;
     }
 
-    if (blocking && stanceMatch) {
+    if (blocking && hitboxMatch) {
       this.hitstun = 0.1;
       this.hitstop = 0.04;
       return;
     }
 
+    if (!hitboxMatch) return; // attack misses entirely
+
     this.health -= attack.damage;
     this.state = "hit";
     this.hitstun = attack.hitstun;
     this.hitstop = 0.05;
-    this.velocityX =
-      attack.knockback *
-      (this.sprite.x > attack.owner.sprite.x ? 1 : -1);
+    this.velocityX = attack.knockback * (this.sprite.x > attack.owner.sprite.x ? 1 : -1);
 
-    if (this.health <= 0) {
-      this.state = "dead";
-    }
+    if (this.health <= 0) this.state = "dead";
   }
+
 
   // ================= HITBOX HELPERS =================
 
   private updateAttackHitbox() {
     this.attackHitbox.x = this.sprite.x + this.facing * 45;
-
-    const baseY = this.sprite.y - this.sprite.displayHeight / 2;
-    const offset = this.sprite.displayHeight / 4;
-
-    this.attackHitbox.y =
-      this.attackStance === "high"
-        ? baseY - offset
-        : this.attackStance === "low"
-        ? baseY + offset
-        : baseY;
+    this.attackHitbox.y = this.getLevelY(this.attackStance);
   }
 
   private updateBlockHitbox() {
-    const bottom = this.sprite.y;
-    const third = this.sprite.displayHeight / 3;
-
     this.blockHitbox.x = this.sprite.x;
-    this.blockHitbox.y =
-      this.stance === "high"
-        ? bottom - third * 2
-        : this.stance === "low"
-        ? bottom
-        : bottom - third;
+    this.blockHitbox.y = this.getLevelY(this.stance);
   }
 
   private resolvePlayerPush() {
@@ -440,7 +531,7 @@ export default class Player {
   private createStaminaUI(x: number, y: number) {
     for (let i = 0; i < this.maxStamina / this.STAMINA_UNIT; i++) {
       this.staminaBlocks.push(
-        this.scene.add.rectangle(x + i * 12, y, 10, 10, 0x00ff00)
+        this.scene.add.rectangle(x + i * 12, y, 10, 10, 0x00ff00),
       );
     }
   }
@@ -452,7 +543,6 @@ export default class Player {
   private gainStamina(v: number) {
     this.stamina = Math.min(this.maxStamina, this.stamina + v);
   }
-
 
   private updateStaminaUI() {
     const units = Math.floor(this.stamina / this.STAMINA_UNIT);
@@ -480,7 +570,7 @@ export default class Player {
     else this.stance = "mid";
   }
 
-  // ================= READ-ONLY API FOR ANIMATION HANDLER =================
+  // ================= READ-ONLY API =================
 
   public getState() {
     return this.state;
@@ -513,23 +603,28 @@ export default class Player {
   public getAttackHitbox() {
     return this.attackHitbox;
   }
-  public getVelocityX() { 
-    return this.velocityX; 
+
+  public getVelocityX() {
+    return this.velocityX;
   }
 
-  public getActiveAttack(): AttackData | null { 
-    if ( 
-      this.state === "attack" && 
-      this.attackPhase === "active" && 
-      this.currentAttack && !this.currentAttack.hasHit 
-    ) { 
-      return this.currentAttack; 
-    } 
-    return null; 
+  public getActiveAttack(): AttackData | null {
+    if (
+      this.state === "attack" &&
+      this.attackPhase === "active" &&
+      this.currentAttack &&
+      !this.currentAttack.hasHit
+    ) {
+      return this.currentAttack;
+    }
+    return null;
   }
 
   public getStamina(): number {
-    return (this.stamina / 5) | 0; //return stamina in the boxes (8 boxes)
+    return (this.stamina / 5) | 0;
   }
 
+  private getLevelY(stance: Stance): number {
+    return this.groundY - this.LEVEL_OFFSET[stance];
+  }
 }
