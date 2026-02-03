@@ -212,7 +212,14 @@ export default class BootScene extends Phaser.Scene {
         frameWidth: 150,
         frameHeight: 158, 
     });
-
+    this.load.spritesheet("p1_attack_light_low", "assets/animations/p1/light_low.png", {
+        frameWidth: 213,
+        frameHeight: 140, 
+    });
+    this.load.spritesheet("p1_attack_light_high", "assets/animations/p1/light_high.png", {
+        frameWidth: 194,
+        frameHeight: 196, 
+    });
 
     this.load.image(
       "bg-training",

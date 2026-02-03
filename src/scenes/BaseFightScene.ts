@@ -512,5 +512,17 @@ update(_: number, delta: number) {
       frameRate: 12,
       repeat: 0,
     });
+    this.anims.create({
+      key: "p1_attack_light_low",
+      frames: this.anims.generateFrameNumbers("p1_attack_light_low", { start: 0, end: 3 }),
+      frameRate: 12,
+      repeat: 0,
+    }); 
+    this.anims.create({
+      key: "p1_attack_light_high",
+      frames: this.anims.generateFrameNumbers("p1_attack_light_high", { start: 0, end: 3 }),
+      frameRate: 12,
+      repeat: 0,
+    });
   }
 }
